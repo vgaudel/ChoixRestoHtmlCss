@@ -1,0 +1,46 @@
+﻿@model List<ChoixResto.Models.Sondage>
+@{
+    Layout = "~/Views/Shared/_LayoutChoixResto.cshtml";
+}
+    <h2 class="page-section-heading text-center text-uppercase text-secondary mb-0">Sondages</h2>
+    <!-- Icon Divider-->
+    <div class="divider-custom">
+        <div class="divider-custom-line"></div>
+        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+        <div class="divider-custom-line"></div>
+    </div>
+    <div class="row justify-content-start">
+
+        @if (@Model.Count == 0 && !User.IsInRole("Admin"))
+        {
+            <h3 class="text-center">Pas de sondage pour l'instant</h3>
+        }
+
+
+        @foreach (var sondage in Model)
+        {
+            string participateLink = "/Vote/Index/" + sondage.Id;
+            string viewResultLink = "/Vote/AfficheResultat/" + sondage.Id;
+            <div class="card col-4 m-5" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title">Sondage n°@sondage.Id</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">créé le @sondage.Date.ToShortDateString()</h6>
+
+                    <a href=@participateLink class="card-link">Participer</a>
+                    <a href=@viewResultLink class="card-link">Voir les résultats</a>
+
+                </div>
+            </div>
+        }
+
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="col-4 m-5" style="width: 18rem;">
+                <a href="/Vote/CreateSondage">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" fill="black" class="align-middle bi bi-plus" viewBox="0 0 16 16">
+                        <path class="plus" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                    </svg>
+                </a>
+            </div>
+        }
+    </div>

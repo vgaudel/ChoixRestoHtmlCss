@@ -1,0 +1,613 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: My First template cloudformation
+Parameters:
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.192.0.0/16
+
+  PublicSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.192.10.0/24
+
+  PublicSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    Default: 10.192.11.0/24
+
+  PrivateSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.192.20.0/24
+
+  PrivateSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    Default: 10.192.21.0/24
+  Token:
+    Type: String
+    Description: Github token.
+  MyPublicIP:
+    Type: String
+    Description: My own public IP.
+    Default: 86.236.61.199/32
+  MyKeyName:
+    Type: String
+    Description: My own key name.
+    Default: pcourt-01
+  Env:
+    Type: String
+    Description: ...
+    Default: test
+  DbUser:
+    Type: String
+    Description: ...
+    Default: admin
+  DbPassword:
+    Type: String
+    Description: ...
+    Default: Coucou123!
+  BranchRepo:
+    Type: String
+    Description: ...
+    Default: master
+  GitRepo:
+    Type: String
+    Description: ...
+    Default: ChoixRestoHtmlCss
+  GithubUser:
+    Type: String
+    Description: ...
+    Default: Piercuta
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Ref Env
+        - Key: env
+          Value: !Ref Env
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref Env
+        - Key: env
+          Value: !Ref Env
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env} Public Subnet (AZ1)
+        - Key: env
+          Value: !Ref Env
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env} Public Subnet (AZ2)
+        - Key: env
+          Value: !Ref Env
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env} Private Subnet (AZ1)
+        - Key: env
+          Value: !Ref Env
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env} Private Subnet (AZ2)
+        - Key: env
+          Value: !Ref Env
+
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: env
+          Value: !Ref Env
+
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: env
+          Value: !Ref Env
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: env
+          Value: !Ref Env
+
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: env
+          Value: !Ref Env
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env} Public Routes
+        - Key: env
+          Value: !Ref Env
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+  
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env} Private Routes (AZ1)
+        - Key: env
+          Value: !Ref Env
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${Env} Private Routes (AZ2)
+        - Key: env
+          Value: !Ref Env
+
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+  NoIngressSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "no-ingress-sg"
+      GroupDescription: "Security group with no ingress rule"
+      VpcId: !Ref VPC
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  RDSInstanceSG:
+    Type: 'AWS::RDS::DBSecurityGroup'
+    Properties:
+      GroupDescription: Enable database access application
+      EC2VpcId : !Ref VPC 
+      DBSecurityGroupIngress:
+        - EC2SecurityGroupId: !GetAtt EC2SG.GroupId 
+        - CIDRIP: !Ref MyPublicIP
+      Tags:
+        - Key: Name
+          Value: mysql-test-instance-sg
+        - Key: env
+          Value: !Ref Env
+         
+  InstanceSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties: 
+      DBSubnetGroupDescription: subnet group for instance mysql
+      DBSubnetGroupName: !Sub ${Env}-subnet-group
+      SubnetIds: 
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  RDSInstance:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      MasterUserPassword: !Ref DbPassword
+      DBInstanceClass: db.t2.micro
+      DBSubnetGroupName: !Ref InstanceSubnetGroup
+      DBSecurityGroups:
+        - !Ref RDSInstanceSG
+      
+      MasterUsername: !Ref DbUser
+      DBInstanceIdentifier: !Join 
+        - '-'
+        - - mysql
+          - cicd
+          - !Ref Env
+      DBName: MySqlCF
+      PubliclyAccessible: true
+      MultiAZ: false
+      Engine: mysql
+      AllocatedStorage: 5
+      Tags:
+        - Key: tag1
+          Value: value1
+        - Key: tag2
+          Value: value2
+        - Key: env
+          Value: !Ref Env
+
+  EC2SG:
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: SecurityGroup for RDS environment.
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: '22'
+          ToPort: '22'
+          IpProtocol: tcp
+        - CidrIp: 0.0.0.0/0
+          FromPort: '5000'
+          ToPort: '5000'
+          IpProtocol: tcp
+      Tags:
+        - Key: env
+          Value: !Ref Env
+    Type: 'AWS::EC2::SecurityGroup'
+  
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-063d4ab14480ac177
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      KeyName: !Ref MyKeyName
+      InstanceType: t2.micro
+      SubnetId: !Ref PublicSubnet1
+      SecurityGroupIds:
+        - !Ref EC2SG
+      UserData:
+          Fn::Base64: !Sub |
+             #!/bin/bash -xe
+             cd /var/
+             mkdir www
+             cd www/
+             mkdir choixresto
+             sudo rpm -Uvh 'https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm'
+             sudo yum install dotnet-sdk-3.1 -y
+             yum install -y ruby
+             cd /home/ec2-user/
+             wget 'https://aws-codedeploy-eu-west-1.s3.eu-west-1.amazonaws.com/latest/install'
+             chmod +x ./install
+             sudo ./install auto
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - '-'
+            - - instance
+              - !Ref Env
+        - Key: app
+          Value: choixresto
+        - Key: env
+          Value: !Ref Env
+  
+  EC2InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2InstanceRole
+  
+  EC2InstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+        - 'arn:aws:iam::aws:policy/AdministratorAccess'
+      Path: /
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  DeployApplication:
+    Type: 'AWS::CodeDeploy::Application'
+    Properties:
+      ApplicationName: choixresto-app
+      ComputePlatform: Server
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  DeploymentGroup:
+    Type: 'AWS::CodeDeploy::DeploymentGroup'
+    Properties:
+      ApplicationName: !Ref DeployApplication
+      Ec2TagFilters:
+        - Key: app
+          Type: KEY_AND_VALUE
+          Value: choixresto
+        - Key: env
+          Type: KEY_AND_VALUE
+          Value: !Ref Env
+      ServiceRoleArn: !GetAtt 
+        - CodeDeployDGRole
+        - Arn
+  
+  CodeDeployDGRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AdministratorAccess'
+      Path: /
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  CodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AdministratorAccess'
+      Path: /
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  CodeBuild:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Join 
+        - '-'
+        - - CODEBUILD
+          - !Ref Env
+      Description: A description about my project
+      LogsConfig:
+        CloudWatchLogs: 
+          Status: DISABLED 
+      ServiceRole: !GetAtt 
+        - CodeBuildRole
+        - Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: 'aws/codebuild/amazonlinux2-x86_64-standard:3.0'
+        EnvironmentVariables:
+          - Name: CS
+            Type: PLAINTEXT
+            Value: !Join 
+              - ''
+              - - server=
+                - !GetAtt 
+                  - RDSInstance
+                  - Endpoint.Address
+                - ;user id=
+                - !Ref DbUser
+                - ;password=
+                - !Ref DbPassword
+                - ;database=ChoixResto
+      Source:
+        Type: CODEPIPELINE
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  CodePipelineRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AdministratorAccess'
+      Path: /
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  ArtifactBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: env
+          Value: !Ref Env
+  
+  Secret:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: 'Token for accessing github repo'
+      Name:
+        !Sub
+          - 'github_token_${environment}'
+          - { environment: !Ref Env }
+      SecretString: 
+        !Sub
+          - '{"github_access_token_${environment}": "${token}"}'
+          - { environment: !Ref Env, token: !Ref Token }   
+      Tags:
+        - Key: env
+          Value: !Ref Env      
+  
+  CodePipeline:
+    Type: 'AWS::CodePipeline::Pipeline'
+    DependsOn: Secret
+    Properties:
+      Name: !Join 
+        - '-'
+        - - CODEPIPELINE
+          - !Ref Env
+      ArtifactStore:
+        Location: !Ref ArtifactBucket
+        Type: S3
+      RoleArn: !GetAtt 
+        - CodePipelineRole
+        - Arn
+      Stages:
+        - Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Version: 1
+                Provider: GitHub
+              OutputArtifacts:
+                - Name: SourceArtifact
+              Configuration:
+                Owner: !Ref GithubUser
+                Repo: !Ref GitRepo
+                Branch: !Ref BranchRepo
+                OAuthToken: 
+                    !Sub
+                      - '{{resolve:secretsmanager:github_token_${environment}:SecretString:github_access_token_${environment}}}'
+                      - { environment: !Ref Env }
+                PollForSourceChanges: false
+              RunOrder: 1
+          Name: SOURCE
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildArtifact
+              Configuration:
+                ProjectName: !Ref CodeBuild
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: DeployAction
+              InputArtifacts:
+                - Name: BuildArtifact
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CodeDeploy
+              Configuration:
+                ApplicationName: !Ref DeployApplication
+                DeploymentGroupName: !Ref DeploymentGroup
+              RunOrder: 1
+      Tags:
+        - Key: env
+          Value: !Ref Env
+
+Outputs: {}

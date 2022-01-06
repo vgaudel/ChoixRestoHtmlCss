@@ -1,0 +1,46 @@
+﻿@model ChoixResto.Models.Resto
+@{
+    Layout = "~/Views/Shared/_LayoutChoixResto.cshtml";
+}
+
+            <h2 class="page-section-heading text-center text-uppercase text-secondary mb-0">Restaurants</h2>
+            <!-- Icon Divider-->
+            <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-xl-7">
+                    @using (Html.BeginForm())
+                    {
+                        <div class="form-floating mb-3">
+                            @Html.TextBoxFor(model => model.Nom, new { @class = "form-control", placeholder = "Nom" })
+                            @Html.LabelFor(model => model.Nom)
+                            @Html.ValidationMessageFor(model => model.Nom)
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            @Html.TextBoxFor(model => model.Telephone, new { @class = "form-control", placeholder = "Téléphone" })
+                            @Html.LabelFor(model => model.Telephone)
+                            @Html.ValidationMessageFor(model => model.Telephone)
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            @Html.TextBoxFor(model => model.Ville, new { @class = "form-control", placeholder = "Ville" })
+                            @Html.LabelFor(model => model.Ville)
+                            @Html.ValidationMessageFor(model => model.Ville)
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            @Html.TextAreaFor(model => model.Description, new { @class = "form-control", placeholder = "Description" })
+                            @Html.LabelFor(model => model.Description)
+                            @Html.ValidationMessageFor(model => model.Description)
+                        </div>
+
+                        <!-- Submit Button-->
+                        <button class="btn btn-primary btn-xl" type="submit">Ajouter</button>
+                    }
+                </div>
+            </div>
+        

@@ -1,0 +1,43 @@
+﻿@model List<ChoixResto.Models.Resto>
+@{
+	Layout = "~/Views/Shared/_LayoutChoixResto.cshtml";
+}
+		<h2 class="page-section-heading text-center text-uppercase text-secondary mb-0">Restaurants</h2>
+		<!-- Icon Divider-->
+		<div class="divider-custom">
+			<div class="divider-custom-line"></div>
+			<div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+			<div class="divider-custom-line"></div>
+		</div>
+		<div class="row justify-content-start">
+			@foreach (var resto in Model)
+			{
+				string editlink = "/Restaurant/ModifierRestaurant/" + resto.Id;
+				string deletelink = "/Restaurant/SupprimerRestaurant/" + resto.Id;
+				<div class="card col-4 m-5" style="width: 18rem;">
+					<div class="card-body">
+						<h5 class="card-title">@resto.Nom</h5>
+						<h6 class="card-subtitle mb-2 text-muted">@resto.Ville</h6>
+						<h6 class="card-subtitle mb-2 text-muted">@resto.Telephone</h6>
+						<p class="card-text">@resto.Description</p>
+						<a href=@editlink class="card-link">Modifier</a>
+
+						@if (User.IsInRole("Admin"))
+						{
+							<a href=@deletelink class="card-link">Supprimer</a>
+						}
+
+
+					</div>
+				</div>
+			}
+			<div class="col-4 m-5" style="width: 18rem;">
+				<a href="/Restaurant/CreerRestaurant">
+					<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" fill="black" class="align-middle bi bi-plus" viewBox="0 0 16 16">
+						<path class="plus" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+					</svg>
+				</a>
+			</div>
+
+		</div>
+	

@@ -1,0 +1,36 @@
+﻿@model ChoixResto.ViewModels.RestaurantVoteViewModel
+
+@{
+    Layout = "~/Views/Shared/_LayoutChoixResto.cshtml";
+}
+
+        <h2 class="page-section-heading text-center text-uppercase text-secondary mb-0">Sondages</h2>
+        <!-- Icon Divider-->
+        <div class="divider-custom">
+            <div class="divider-custom-line"></div>
+            <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+            <div class="divider-custom-line"></div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-8">
+                <p>Cochez les restaurants où vous voulez bien aller. Attention, le vote est définitif !</p>
+                @Html.ValidationMessageFor(m => m.ListeDesResto)
+                @using (Html.BeginForm())
+                {
+                    for (int i = 0; i < Model.ListeDesResto.Count; i++)
+                    {
+                        <div class="form-check m-3">
+                            @Html.CheckBoxFor(m => m.ListeDesResto[i].EstSelectionne, new {@class="form-check-input", data_val = "true", data_val_verifListe = "Vous devez choisir au moins un restaurant" })
+                            @Html.LabelFor(m => m.ListeDesResto[i].EstSelectionne, Model.ListeDesResto[i].NomEtTelephone, new { @class = "form-check-label" })
+                            @Html.HiddenFor(m => m.ListeDesResto[i].Id)
+                            @Html.HiddenFor(m => m.ListeDesResto[i].NomEtTelephone)
+                        </div>
+                    }
+                    <button class="btn btn-primary" type="submit">Valider</button>
+                }
+            </div>
+            
+
+        </div>
+
+
